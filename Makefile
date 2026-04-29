@@ -6,6 +6,7 @@ endif
 
 # Variables
 CONTAINER_NAME=${APP_NAME}-app
+MONGO_CONTAINER_NAME=${APP_NAME}-db
 
 # Commands
 dep: 
@@ -27,14 +28,27 @@ init-docker:
 	docker compose up -d --build
 
 up: 
-	docker-compose up -d
+	docker compose up -d
 
 down:
-	docker-compose down
+	docker compose down
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
+
+# MongoDB commands
+container-mongo:
+	docker exec -it ${MONGO_CONTAINER_NAME} /bin/sh
+
+create-db:
+	docker exec -it ${MONGO_CONTAINER_NAME} mongosh --host localhost --username=${DB_USERNAME} --password=${DB_PASSWORD} --authenticationDatabase admin --eval "db.getSiblingDB('${DB_NAME}').createCollection('_initialized')"
+
+drop-db:
+	docker exec -it ${MONGO_CONTAINER_NAME} mongosh --host localhost --username=${DB_USERNAME} --password=${DB_PASSWORD} --authenticationDatabase admin --eval "db.getSiblingDB('${DB_NAME}').dropDatabase()"
 
 # Docker commands
 container-app:
 	docker exec -it ${CONTAINER_NAME} /bin/sh
+
+seed:
+	docker exec -it ${CONTAINER_NAME} /bin/sh -c "pnpm run seed:run"

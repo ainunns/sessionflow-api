@@ -1,7 +1,6 @@
 services:
   app:
     build:
-      dockerfile: ./docker/Dockerfile
       context: .
       # Only will build development stage from our dockerfile
       target: development
@@ -14,8 +13,33 @@ services:
     command: pnpm run start:dev
     ports:
       - ${APP_PORT:-8888}:8888
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - app-network
+
+  db:
+    image: mongo:latest
+    container_name: ${APP_NAME:-sessionflow-api}-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MONGO_INITDB_DATABASE: ${DB_NAME}
+    ports:
+      - ${DB_PORT:-27017}:27017
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo_data:
 
 networks:
   app-network:
