@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      dockerfile: ./docker/Dockerfile
+      context: .
+      # Only will build development stage from our dockerfile
+      target: development
+    container_name: ${APP_NAME:-nest-redis-caching}-app
+    volumes:
+      - .:/usr/src/app
+    env_file:
+    - .env
+    # Run a command against the development stage of the image
+    command: pnpm run start:dev
+    ports:
+      - ${APP_PORT:-8888}:8888
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
