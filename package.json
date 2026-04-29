@@ -41,7 +41,8 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "ua-parser-js": "^2.0.9"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8",
@@ -55,6 +56,7 @@
     "@types/node": "^22.10.7",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
+    "@types/ua-parser-js": "^0.7.39",
     "globals": "^16.0.0",
     "husky": "^9.1.7",
     "jest": "^30.0.0",

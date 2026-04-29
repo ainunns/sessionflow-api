@@ -12,12 +12,12 @@ import {
   ChangePasswordUseCase,
   UpdateUserUseCase,
 } from '@/modules/user/application/use-case';
+import { UserMapper } from '@/modules/user/infrastructure/mapper/user.mapper';
+import { UserRepository } from '@/modules/user/infrastructure/repository/user.repository';
 import {
   UserEntity,
   UserSchema,
-} from '@/modules/user/infrastructure/entity/user.schema';
-import { UserMapper } from '@/modules/user/infrastructure/mapper/user.mapper';
-import { UserRepository } from '@/modules/user/infrastructure/repository/user.repository';
+} from '@/modules/user/infrastructure/schema/user.schema';
 import { UserController } from '@/modules/user/presentation/controller/user.controller';
 
 @Module({

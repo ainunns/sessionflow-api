@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { Mapper } from '@/common/interface/domain/mapper.interface';
 import { User, type UserProps } from '@/modules/user/domain/entity/user.entity';
-import { UserEntity } from '@/modules/user/infrastructure/entity/user.schema';
+import { UserEntity } from '@/modules/user/infrastructure/schema/user.schema';
 
 @Injectable()
 export class UserMapper

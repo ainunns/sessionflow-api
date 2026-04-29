@@ -1,18 +1,20 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { SessionRepository } from '@/modules/session/infrastructure/repository/session.repository';
 import {
-  RefreshTokenEntity,
-  RefreshTokenSchema,
-} from '@/modules/session/infrastructure/entity/refresh-token.schema';
-import { RefreshTokenRepository } from '@/modules/session/infrastructure/repository/refresh-token.repository';
+  SessionEntity,
+  SessionSchema,
+} from '@/modules/session/infrastructure/schema/session.schema';
+import { SessionController } from '@/modules/session/presentation/controller/session.controller';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: RefreshTokenEntity.name, schema: RefreshTokenSchema },
+      { name: SessionEntity.name, schema: SessionSchema },
     ]),
   ],
-  providers: [RefreshTokenRepository],
-  exports: [RefreshTokenRepository],
+  controllers: [SessionController],
+  providers: [SessionRepository],
+  exports: [SessionRepository],
 })
 export class SessionModule {}

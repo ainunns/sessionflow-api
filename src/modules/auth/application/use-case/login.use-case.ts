@@ -1,7 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { IUseCase } from '@/common/interface/domain/use-case.interface';
-import { TokenService } from '@/modules/auth/application/service/token.service';
+import {
+  DeviceInfo,
+  TokenService,
+} from '@/modules/auth/application/service/token.service';
 import { BcryptService } from '@/modules/auth/infrastructure/bcrypt/bcrypt.service';
 import { LoginRequestDto } from '@/modules/auth/presentation/dto/request';
 import { LoginResponseDto } from '@/modules/auth/presentation/dto/response';
@@ -19,7 +22,10 @@ export class LoginUseCase
     private readonly tokenService: TokenService,
   ) {}
 
-  async execute(input: LoginRequestDto) {
+  async execute(
+    input: LoginRequestDto,
+    deviceInfo?: DeviceInfo,
+  ): Promise<LoginResponseDto> {
     const user = await this.queryBus.execute(
       new GetUserByEmailQuery(input.email),
     );
@@ -39,6 +45,7 @@ export class LoginUseCase
     const tokenPair = await this.tokenService.issueTokenPair(
       user.id,
       user.getEmail(),
+      deviceInfo,
     );
 
     return {

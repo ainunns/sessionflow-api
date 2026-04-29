@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
+import { DeviceInfo } from '@/modules/auth/application/service/token.service';
 import {
   LoginUseCase,
   RefreshUseCase,
@@ -23,16 +24,16 @@ export class AuthService {
     private readonly queryBus: QueryBus,
   ) {}
 
-  async login(loginDto: LoginRequestDto) {
-    return await this.loginUseCase.execute(loginDto);
+  async login(loginDto: LoginRequestDto, deviceInfo?: DeviceInfo) {
+    return await this.loginUseCase.execute(loginDto, deviceInfo);
   }
 
   async register(registerDto: RegisterRequestDto) {
     return await this.registerUseCase.execute(registerDto);
   }
 
-  async refresh(refreshDto: RefreshRequestDto) {
-    return await this.refreshUseCase.execute(refreshDto);
+  async refresh(refreshDto: RefreshRequestDto, deviceInfo?: DeviceInfo) {
+    return await this.refreshUseCase.execute(refreshDto, deviceInfo);
   }
 
   async me(userId: string) {

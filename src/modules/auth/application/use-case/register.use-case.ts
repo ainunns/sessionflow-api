@@ -19,7 +19,7 @@ export class RegisterUseCase
     private readonly bcryptService: BcryptService,
   ) {}
 
-  async execute(input: RegisterRequestDto) {
+  async execute(input: RegisterRequestDto): Promise<RegisterResponseDto> {
     const existing = await this.queryBus.execute(
       new GetUserByEmailQuery(input.email),
     );

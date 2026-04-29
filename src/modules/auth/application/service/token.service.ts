@@ -2,16 +2,18 @@ import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { RefreshTokenRepository } from '@/modules/session/infrastructure/repository/refresh-token.repository';
-
-const SECOND_MS = 1000;
-const MINUTE_MS = 60 * SECOND_MS;
-const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
-const DEFAULT_REFRESH_DAYS = 7;
-const DEFAULT_REFRESH_MS = DEFAULT_REFRESH_DAYS * DAY_MS;
-const NUMERIC_EXPIRES_REGEX = /^[0-9]+$/;
-const UNIT_EXPIRES_REGEX = /^([0-9]+)\s*([smhd])$/i;
+import {
+  DAY_MS,
+  DEFAULT_REFRESH_MS,
+  HOUR_MS,
+  MINUTE_MS,
+  SECOND_MS,
+} from '@/common/constant/cache';
+import {
+  NUMERIC_EXPIRES_REGEX,
+  UNIT_EXPIRES_REGEX,
+} from '@/common/constant/regex';
+import { SessionRepository } from '@/modules/session/infrastructure/repository/session.repository';
 
 interface RefreshTokenPayload {
   sub: string;
@@ -23,45 +25,101 @@ export interface TokenPair {
   refreshToken: string;
 }
 
+export interface DeviceInfo {
+  deviceType?: string;
+  deviceName?: string;
+  browser?: string;
+  os?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
 @Injectable()
 export class TokenService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly refreshTokenRepository: RefreshTokenRepository,
+    private readonly sessionRepository: SessionRepository,
   ) {}
 
-  async issueTokenPair(userId: string, email: string): Promise<TokenPair> {
-    const accessToken = await this.jwtService.signAsync({
-      sub: userId,
-      email,
-    });
-
-    const refreshToken = await this.signRefreshToken(userId);
+  async issueTokenPair(
+    userId: string,
+    email: string,
+    deviceInfo?: DeviceInfo,
+  ): Promise<TokenPair> {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.signAccessToken(userId, email),
+      this.signRefreshToken(userId, deviceInfo),
+    ]);
     return { accessToken, refreshToken };
   }
 
-  async consumeRefreshToken(refreshToken: string): Promise<string> {
-    const payload = await this.verifyRefreshToken(refreshToken);
-    const tokenRecord = await this.refreshTokenRepository.findActiveByTokenId(
+  async validateAndRotateSession(
+    oldToken: string,
+    deviceInfo?: DeviceInfo,
+  ): Promise<{ userId: string; newRefreshToken: string }> {
+    const payload = await this.verifyRefreshToken(oldToken);
+    const session = await this.sessionRepository.findActiveByTokenId(
       payload.sub,
       payload.jti,
     );
 
-    if (!tokenRecord) {
-      throw new UnauthorizedException('Refresh token is invalid');
+    if (!(session && this.compareHash(oldToken, session.token_hash))) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    const matches = this.compareHash(refreshToken, tokenRecord.token_hash);
-    if (!matches) {
-      throw new UnauthorizedException('Refresh token is invalid');
-    }
+    const newTokenId = randomUUID();
+    const expiresInMs = this.parseExpiresInToMs(
+      this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
+    );
+    const newExpiresAt = new Date(Date.now() + expiresInMs);
 
-    await this.refreshTokenRepository.revoke(payload.sub, payload.jti);
-    return payload.sub;
+    const secret =
+      this.configService.get<string>('JWT_REFRESH_SECRET') ??
+      this.configService.getOrThrow<string>('JWT_SECRET');
+
+    const newRefreshToken = await this.jwtService.signAsync(
+      { sub: payload.sub, jti: newTokenId },
+      {
+        secret,
+        expiresIn: Math.floor(expiresInMs / SECOND_MS),
+      },
+    );
+
+    await this.sessionRepository.rotateToken({
+      userId: payload.sub,
+      oldTokenId: payload.jti,
+      newTokenId,
+      newTokenHash: this.hashToken(newRefreshToken),
+      newExpiresAt,
+      lastUsedAt: new Date(),
+      deviceType: deviceInfo?.deviceType,
+      deviceName: deviceInfo?.deviceName,
+      browser: deviceInfo?.browser,
+      os: deviceInfo?.os,
+      ipAddress: deviceInfo?.ipAddress,
+      userAgent: deviceInfo?.userAgent,
+    });
+
+    return { userId: payload.sub, newRefreshToken };
   }
 
-  private async signRefreshToken(userId: string): Promise<string> {
+  async signAccessToken(userId: string, email: string): Promise<string> {
+    const secret = this.configService.getOrThrow<string>('JWT_SECRET');
+    const expiresIn = Number.parseInt(
+      this.configService.get<string>('JWT_EXPIRES_IN') ?? '3600',
+      10,
+    );
+    return await this.jwtService.signAsync(
+      { sub: userId, email },
+      { secret, expiresIn },
+    );
+  }
+
+  private async signRefreshToken(
+    userId: string,
+    deviceInfo?: DeviceInfo,
+  ): Promise<string> {
     const tokenId = randomUUID();
     const refreshSecret =
       this.configService.get<string>('JWT_REFRESH_SECRET') ??
@@ -81,11 +139,17 @@ export class TokenService {
     );
 
     const expiresAt = new Date(Date.now() + refreshExpiresInMs);
-    await this.refreshTokenRepository.create({
+    await this.sessionRepository.create({
       userId,
       tokenId,
       tokenHash: this.hashToken(token),
       expiresAt,
+      deviceType: deviceInfo?.deviceType,
+      deviceName: deviceInfo?.deviceName,
+      browser: deviceInfo?.browser,
+      os: deviceInfo?.os,
+      ipAddress: deviceInfo?.ipAddress,
+      userAgent: deviceInfo?.userAgent,
     });
 
     return token;

@@ -4,8 +4,8 @@ import { FilterQuery, Model } from 'mongoose';
 import { ICollection } from '@/common/interface/presentation/collection.interface';
 import { User, UserProps } from '@/modules/user/domain/entity/user.entity';
 import { IUserRepository } from '@/modules/user/domain/repository/user.repository';
-import { UserEntity } from '@/modules/user/infrastructure/entity/user.schema';
 import { UserMapper } from '@/modules/user/infrastructure/mapper/user.mapper';
+import { UserEntity } from '@/modules/user/infrastructure/schema/user.schema';
 
 @Injectable()
 export class UserRepository implements IUserRepository {

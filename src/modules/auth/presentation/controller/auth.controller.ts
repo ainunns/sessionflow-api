@@ -5,10 +5,14 @@ import {
   HttpStatus,
   Post,
   Put,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import type { Request } from 'express';
+import { UAParser } from 'ua-parser-js';
 import { AuthService } from '@/modules/auth/application/service/auth.service';
+import { DeviceInfo } from '@/modules/auth/application/service/token.service';
 import type { JwtPayload } from '@/modules/auth/infrastructure/jwt/jwt.strategy';
 import { CurrentUser } from '@/modules/auth/presentation/decorator/current-user.decorator';
 import {
@@ -27,57 +31,63 @@ export class AuthController {
     private readonly userService: UserService,
   ) {}
 
+  private extractDeviceInfo(req: Request, deviceName?: string): DeviceInfo {
+    const ua = req.headers['user-agent'] ?? '';
+    const parser = new UAParser(ua);
+    const browser = parser.getBrowser().name;
+    const os = parser.getOS().name;
+    const rawDeviceType = parser.getDevice().type;
+    const deviceType = rawDeviceType ?? 'desktop';
+    const forwarded = req.headers['x-forwarded-for'];
+    const ipAddress =
+      (Array.isArray(forwarded)
+        ? forwarded[0]
+        : forwarded?.split(',')[0]?.trim()) ?? req.ip;
+    return {
+      browser,
+      os,
+      deviceType,
+      ipAddress,
+      userAgent: ua || undefined,
+      deviceName,
+    };
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  @Throttle({
-    default: {
-      limit: 10,
-      ttl: 60_000,
-    },
-  })
-  async login(@Body() loginDto: LoginRequestDto) {
-    const result = await this.authService.login(loginDto);
-    return { message: 'Login successful', data: result };
+  async login(@Body() loginDto: LoginRequestDto, @Req() req: Request) {
+    const deviceInfo = this.extractDeviceInfo(req);
+    const data = await this.authService.login(loginDto, deviceInfo);
+    return { message: 'Login successful', data };
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60_000,
-    },
-  })
   async register(@Body() registerDto: RegisterRequestDto) {
-    const result = await this.authService.register(registerDto);
-    return { message: 'Registration successful', data: result };
+    const data = await this.authService.register(registerDto);
+    return { message: 'Registration successful', data };
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
-  @Throttle({
-    default: {
-      limit: 20,
-      ttl: 60_000,
-    },
-  })
-  async refresh(@Body() refreshDto: RefreshRequestDto) {
-    const result = await this.authService.refresh(refreshDto);
-    return { message: 'Token refreshed', data: result };
+  async refresh(@Body() refreshDto: RefreshRequestDto, @Req() req: Request) {
+    const deviceInfo = this.extractDeviceInfo(req);
+    const data = await this.authService.refresh(refreshDto, deviceInfo);
+    return { message: 'Token refreshed', data };
   }
 
-  @Put('change-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60_000,
-    },
-  })
+  @HttpCode(HttpStatus.OK)
+  @Put('change-password')
   async changePassword(
     @CurrentUser() user: JwtPayload,
     @Body() changePasswordDto: ChangePasswordRequestDto,
   ) {
     await this.userService.changePassword(user.sub, changePasswordDto);
-    return { message: 'Password changed successfully', data: null };
+    const data = null;
+    return { message: 'Password changed successfully', data };
   }
 }

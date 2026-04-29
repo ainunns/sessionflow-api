@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { IUseCase } from '@/common/interface/domain/use-case.interface';
-import { TokenService } from '@/modules/auth/application/service/token.service';
+import {
+  DeviceInfo,
+  TokenService,
+} from '@/modules/auth/application/service/token.service';
 import { RefreshRequestDto } from '@/modules/auth/presentation/dto/request/refresh.dto';
 import { RefreshResponseDto } from '@/modules/auth/presentation/dto/response/refresh.dto';
 import { GetUserByIdQuery } from '@/modules/user/application/query';
@@ -17,10 +20,15 @@ export class RefreshUseCase
     private readonly userMapper: UserMapper,
   ) {}
 
-  async execute(input: RefreshRequestDto): Promise<RefreshResponseDto> {
-    const userId = await this.tokenService.consumeRefreshToken(
-      input.refresh_token,
-    );
+  async execute(
+    input: RefreshRequestDto,
+    deviceInfo?: DeviceInfo,
+  ): Promise<RefreshResponseDto> {
+    const { userId, newRefreshToken } =
+      await this.tokenService.validateAndRotateSession(
+        input.refresh_token,
+        deviceInfo,
+      );
 
     const user = await this.queryBus.execute(new GetUserByIdQuery(userId));
 
@@ -28,15 +36,15 @@ export class RefreshUseCase
       throw new NotFoundException('User not found');
     }
 
-    const tokenPair = await this.tokenService.issueTokenPair(
+    const accessToken = await this.tokenService.signAccessToken(
       userId,
       user.getEmail(),
     );
 
     return {
       user: this.userMapper.toResponse(user),
-      access_token: tokenPair.accessToken,
-      refresh_token: tokenPair.refreshToken,
+      access_token: accessToken,
+      refresh_token: newRefreshToken,
     };
   }
 }
