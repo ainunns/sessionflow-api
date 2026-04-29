@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { JwtService } from '@nestjs/jwt';
 import { IUseCase } from '@/common/interface/domain/use-case.interface';
+import { TokenService } from '@/modules/auth/application/service/token.service';
 import { BcryptService } from '@/modules/auth/infrastructure/bcrypt/bcrypt.service';
 import { LoginRequestDto } from '@/modules/auth/presentation/dto/request';
 import { LoginResponseDto } from '@/modules/auth/presentation/dto/response';
@@ -16,7 +16,7 @@ export class LoginUseCase
     private readonly queryBus: QueryBus,
     private readonly userMapper: UserMapper,
     private readonly bcryptService: BcryptService,
-    private readonly jwtService: JwtService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async execute(input: LoginRequestDto) {
@@ -36,13 +36,15 @@ export class LoginUseCase
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const payload = {
-      sub: user.id,
-      email: user.getEmail(),
+    const tokenPair = await this.tokenService.issueTokenPair(
+      user.id,
+      user.getEmail(),
+    );
+
+    return {
+      user: this.userMapper.toResponse(user),
+      access_token: tokenPair.accessToken,
+      refresh_token: tokenPair.refreshToken,
     };
-
-    const token = await this.jwtService.signAsync(payload);
-
-    return { user: this.userMapper.toResponse(user), token };
   }
 }

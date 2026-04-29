@@ -5,14 +5,17 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { RegisterHandler } from '@/modules/auth/application/handler';
 import { AuthService } from '@/modules/auth/application/service/auth.service';
+import { TokenService } from '@/modules/auth/application/service/token.service';
 import {
   LoginUseCase,
+  RefreshUseCase,
   RegisterUseCase,
 } from '@/modules/auth/application/use-case';
 import { BcryptService } from '@/modules/auth/infrastructure/bcrypt/bcrypt.service';
 import { JwtStrategy } from '@/modules/auth/infrastructure/jwt/jwt.strategy';
 import { AuthController } from '@/modules/auth/presentation/controller/auth.controller';
 import { AuthGuard } from '@/modules/auth/presentation/guard/auth.guard';
+import { SessionModule } from '@/modules/session/session.module';
 import { UserMapper } from '@/modules/user/infrastructure/mapper/user.mapper';
 import { UserModule } from '@/modules/user/user.module';
 
@@ -21,6 +24,7 @@ import { UserModule } from '@/modules/user/user.module';
     ConfigModule,
     CqrsModule,
     UserModule,
+    SessionModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -41,9 +45,11 @@ import { UserModule } from '@/modules/user/user.module';
     AuthService,
     LoginUseCase,
     RegisterUseCase,
+    RefreshUseCase,
     RegisterHandler,
     UserMapper,
     BcryptService,
+    TokenService,
     JwtStrategy,
     AuthGuard,
   ],

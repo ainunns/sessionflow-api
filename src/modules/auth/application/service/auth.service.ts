@@ -2,10 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import {
   LoginUseCase,
+  RefreshUseCase,
   RegisterUseCase,
 } from '@/modules/auth/application/use-case';
 import {
   LoginRequestDto,
+  RefreshRequestDto,
   RegisterRequestDto,
 } from '@/modules/auth/presentation/dto/request';
 import { GetUserByIdQuery } from '@/modules/user/application/query';
@@ -16,6 +18,7 @@ export class AuthService {
   constructor(
     private readonly loginUseCase: LoginUseCase,
     private readonly registerUseCase: RegisterUseCase,
+    private readonly refreshUseCase: RefreshUseCase,
     private readonly userMapper: UserMapper,
     private readonly queryBus: QueryBus,
   ) {}
@@ -26,6 +29,10 @@ export class AuthService {
 
   async register(registerDto: RegisterRequestDto) {
     return await this.registerUseCase.execute(registerDto);
+  }
+
+  async refresh(refreshDto: RefreshRequestDto) {
+    return await this.refreshUseCase.execute(refreshDto);
   }
 
   async me(userId: string) {

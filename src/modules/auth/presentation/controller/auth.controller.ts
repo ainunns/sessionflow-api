@@ -13,6 +13,7 @@ import type { JwtPayload } from '@/modules/auth/infrastructure/jwt/jwt.strategy'
 import { CurrentUser } from '@/modules/auth/presentation/decorator/current-user.decorator';
 import {
   LoginRequestDto,
+  RefreshRequestDto,
   RegisterRequestDto,
 } from '@/modules/auth/presentation/dto/request';
 import { AuthGuard } from '@/modules/auth/presentation/guard/auth.guard';
@@ -49,6 +50,19 @@ export class AuthController {
   async register(@Body() registerDto: RegisterRequestDto) {
     const result = await this.authService.register(registerDto);
     return { message: 'Registration successful', data: result };
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('refresh')
+  @Throttle({
+    default: {
+      limit: 20,
+      ttl: 60_000,
+    },
+  })
+  async refresh(@Body() refreshDto: RefreshRequestDto) {
+    const result = await this.authService.refresh(refreshDto);
+    return { message: 'Token refreshed', data: result };
   }
 
   @Put('change-password')
