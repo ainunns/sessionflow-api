@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from '@/modules/auth/application/service/auth.service';
 import type { JwtPayload } from '@/modules/auth/infrastructure/jwt/jwt.strategy';
@@ -18,6 +26,7 @@ export class AuthController {
     private readonly userService: UserService,
   ) {}
 
+  @HttpCode(HttpStatus.OK)
   @Post('login')
   @Throttle({
     default: {
