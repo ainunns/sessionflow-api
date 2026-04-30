@@ -82,3 +82,9 @@ pnpm run test:cov
 - Keeping validation rules consistent across shared DTOs in controllers and use-cases.
 - Managing MongoDB connection lifecycles in tests while keeping e2e runs fast and reliable.
 - Balancing strict input validation with backward compatibility for evolving request payloads.
+
+## API documentation
+
+For detailed API documentation, please visit the following link:
+
+https://documenter.getpostman.com/view/28076994/2sBXqJLghV
