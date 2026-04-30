@@ -17,6 +17,7 @@ import type { JwtPayload } from '@/modules/auth/infrastructure/jwt/jwt.strategy'
 import { CurrentUser } from '@/modules/auth/presentation/decorator/current-user.decorator';
 import {
   LoginRequestDto,
+  LogoutRequestDto,
   RefreshRequestDto,
   RegisterRequestDto,
 } from '@/modules/auth/presentation/dto/request';
@@ -76,6 +77,14 @@ export class AuthController {
     const deviceInfo = this.extractDeviceInfo(req);
     const data = await this.authService.refresh(refreshDto, deviceInfo);
     return { message: 'Token refreshed', data };
+  }
+
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @Post('logout')
+  async logout(@Body() logoutDto: LogoutRequestDto) {
+    const data = await this.authService.logout(logoutDto);
+    return { message: 'Logout successful', data };
   }
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })

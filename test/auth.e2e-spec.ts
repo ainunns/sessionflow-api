@@ -99,4 +99,33 @@ describe('Auth (e2e)', () => {
       .send({ email, password: newPassword })
       .expect(200);
   });
+
+  it('logs out the current device and revokes its refresh token', async () => {
+    const email = uniqueEmail();
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ email, password })
+      .expect(201);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email, password })
+      .expect(200);
+
+    const refreshToken = loginResponse.body.data.refresh_token as string;
+
+    const logoutResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/logout')
+      .send({ refresh_token: refreshToken })
+      .expect(200);
+
+    expect(logoutResponse.body.message).toBe('Logout successful');
+    expect(logoutResponse.body.data).toBeNull();
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .send({ refresh_token: refreshToken })
+      .expect(401);
+  });
 });

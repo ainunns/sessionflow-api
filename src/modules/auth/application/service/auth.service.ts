@@ -3,11 +3,13 @@ import { QueryBus } from '@nestjs/cqrs';
 import { DeviceInfo } from '@/modules/auth/application/service/token.service';
 import {
   LoginUseCase,
+  LogoutUseCase,
   RefreshUseCase,
   RegisterUseCase,
 } from '@/modules/auth/application/use-case';
 import {
   LoginRequestDto,
+  LogoutRequestDto,
   RefreshRequestDto,
   RegisterRequestDto,
 } from '@/modules/auth/presentation/dto/request';
@@ -18,6 +20,7 @@ import { UserMapper } from '@/modules/user/infrastructure/mapper/user.mapper';
 export class AuthService {
   constructor(
     private readonly loginUseCase: LoginUseCase,
+    private readonly logoutUseCase: LogoutUseCase,
     private readonly registerUseCase: RegisterUseCase,
     private readonly refreshUseCase: RefreshUseCase,
     private readonly userMapper: UserMapper,
@@ -30,6 +33,10 @@ export class AuthService {
 
   async register(registerDto: RegisterRequestDto) {
     return await this.registerUseCase.execute(registerDto);
+  }
+
+  async logout(logoutDto: LogoutRequestDto) {
+    return await this.logoutUseCase.execute(logoutDto);
   }
 
   async refresh(refreshDto: RefreshRequestDto, deviceInfo?: DeviceInfo) {

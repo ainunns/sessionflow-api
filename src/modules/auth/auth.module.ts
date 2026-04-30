@@ -8,6 +8,7 @@ import { AuthService } from '@/modules/auth/application/service/auth.service';
 import { TokenService } from '@/modules/auth/application/service/token.service';
 import {
   LoginUseCase,
+  LogoutUseCase,
   RefreshUseCase,
   RegisterUseCase,
 } from '@/modules/auth/application/use-case';
@@ -44,6 +45,7 @@ import { UserModule } from '@/modules/user/user.module';
   providers: [
     AuthService,
     LoginUseCase,
+    LogoutUseCase,
     RegisterUseCase,
     RefreshUseCase,
     RegisterHandler,

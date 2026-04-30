@@ -104,6 +104,20 @@ export class TokenService {
     return { userId: payload.sub, newRefreshToken };
   }
 
+  async revokeSession(refreshToken: string): Promise<void> {
+    const payload = await this.verifyRefreshToken(refreshToken);
+    const session = await this.sessionRepository.findActiveByTokenId(
+      payload.sub,
+      payload.jti,
+    );
+
+    if (!(session && this.compareHash(refreshToken, session.token_hash))) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    await this.sessionRepository.revokeByTokenId(payload.sub, payload.jti);
+  }
+
   async signAccessToken(userId: string, email: string): Promise<string> {
     const secret = this.configService.getOrThrow<string>('JWT_SECRET');
     const expiresIn = Number.parseInt(

@@ -26,6 +26,7 @@ describe('TokenService', () => {
       create: jest.fn(),
       findActiveByTokenId: jest.fn(),
       rotateToken: jest.fn(),
+      revokeByTokenId: jest.fn(),
     } as unknown as jest.Mocked<SessionRepository>;
 
     service = new TokenService(jwtService, configService, sessionRepository);
@@ -177,5 +178,45 @@ describe('TokenService', () => {
     await expect(
       service.validateAndRotateSession('missing-token'),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('revokes the current refresh-token session', async () => {
+    const refreshToken = 'current-refresh-token';
+    const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
+
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'JWT_REFRESH_SECRET') return 'refresh-secret';
+      if (key === 'JWT_SECRET') return 'access-secret';
+      return undefined;
+    });
+
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: 'user-123',
+      jti: 'token-id',
+    } as never);
+
+    sessionRepository.findActiveByTokenId.mockResolvedValue({
+      token_hash: tokenHash,
+    } as never);
+
+    await service.revokeSession(refreshToken);
+
+    expect(sessionRepository.revokeByTokenId).toHaveBeenCalledWith(
+      'user-123',
+      'token-id',
+    );
+  });
+
+  it('rejects revocation when refresh token is not active', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: 'user-123',
+      jti: 'token-id',
+    } as never);
+
+    sessionRepository.findActiveByTokenId.mockResolvedValue(null);
+
+    await expect(service.revokeSession('revoked-token')).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 });
