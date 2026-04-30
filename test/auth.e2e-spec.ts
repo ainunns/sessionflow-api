@@ -57,7 +57,8 @@ describe('Auth (e2e)', () => {
     expect(loginResponse.body.message).toBe('Login successful');
     expect(loginResponse.body.data).toEqual(
       expect.objectContaining({
-        token: expect.any(String),
+        access_token: expect.any(String),
+        refresh_token: expect.any(String),
         user: expect.objectContaining({
           id: expect.any(String),
           email,
@@ -79,7 +80,7 @@ describe('Auth (e2e)', () => {
       .send({ email, password })
       .expect(200);
 
-    const token = loginResponse.body.data.token as string;
+    const token = loginResponse.body.data.access_token as string;
 
     const changeResponse = await request(app.getHttpServer())
       .put('/api/v1/auth/change-password')

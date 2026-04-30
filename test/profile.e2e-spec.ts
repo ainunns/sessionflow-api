@@ -45,7 +45,7 @@ describe('Profile (e2e)', () => {
       .send({ email, password })
       .expect(200);
 
-    const token = loginResponse.body.data.token as string;
+    const token = loginResponse.body.data.access_token as string;
 
     const meResponse = await request(app.getHttpServer())
       .get('/api/v1/profile')
@@ -75,7 +75,7 @@ describe('Profile (e2e)', () => {
       .send({ email, password })
       .expect(200);
 
-    const token = loginResponse.body.data.token as string;
+    const token = loginResponse.body.data.access_token as string;
 
     const updateResponse = await request(app.getHttpServer())
       .put('/api/v1/profile')
